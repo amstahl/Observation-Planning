@@ -1,0 +1,100 @@
+import pandas as pd
+import astropy
+import numpy as np
+import astropy
+import julian
+import datetime as dt
+
+
+# desired column names
+# current names of the columns on the Exoplanet Archive
+# update here if needed
+
+Pl_name = 'pl_name'               # name of planet
+tranflag = 'pl_tranflag'          # if equal to 1, it is a transiting planet
+orbper = 'pl_orbper'              # orbital period of the planet in days
+per_err1 = 'pl_orbpererr1'        # upper error of the orbital period (+)
+per_err2 = 'pl_orbpererr2'        # lower error of the orbital period(-)
+transdur = 'pl_trandur'           # transit duration in days
+transdurerr1 = 'pl_trandurerr1'   # transit duration upper error (+)
+transdurerr2 = 'pl_trandurerr2'   # transit duration lower error (-)
+tranmid = 'pl_tranmid'            # Transit midpoint in JDs
+tranmiderr1 = 'pl_tranmiderr1'    # transit midpoint upper error (+)
+tranmiderr2 = 'pl_tranmiderr2'    # transit midpoint lower error (-)
+pl_rade = 'pl_rade'               # planet radius in Earth radii
+pl_raderr1 = 'pl_radeerr1'        # planet radius + error
+pl_raderr2 = 'pl_radeerr2'        # planet radius - error
+pl_trandep = 'pl_trandep'         # transit depth percentage
+pl_trandeperr1 = 'pl_trandeperr1' # transit depth error +
+pl_trandeperr2 = 'pl_trandeperr2' # transit depth error -
+st_teff = 'st_teff'               # effective temperature of the star in K
+st_tefferr1 = 'st_tefferr1'       # effective temp of star error +
+st_tefferr2 = 'st_tefferr2'       # effective temp of star error -
+st_logg = 'st_logg'               # stellar surface gravity
+st_loggerr1 = 'st_loggerr1'       # surface gravity error +
+st_loggerr2 = 'st_loggerr2'       # surface gravity error -
+jmag = 'st_j'                     # J-magnitude
+jmag_err = 'st_jerr'              # J-magnitude error        
+
+
+# url to confirmed exoplanet data API
+# exoplanets data frame contains all desired exoplanet data from the confirmed exoplanets archive
+# ONLY transiting planets!
+# drop all planets with missing data
+
+url = 'https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=exoplanets&select=' + Pl_name + ',' + tranflag + ',' + orbper + ','+ per_err1 +\
+      ',' + per_err2 + ',' + transdur + ',' + transdurerr1 + ',' + transdurerr2 + ',' + tranmid + ','+ tranmiderr1 + ',' + tranmiderr2 + ','+timeref+'&where=' + tranflag + '=1'
+exoplanets = pd.read_csv(url).dropna()
+
+# set your observation time window in JDs here
+
+obs_time= 2460066 # 2023-05-01 12:00:00 
+obs_end= 2460189 # 2023-09-01 12:00:00
+
+# transit midpoint calculation and uncertainty functions
+def transit_time(row, obs_time,obs_end):
+    T0 = row[tranmid]
+    P = row[orbper]
+    i = 0
+    T = T0
+    while(T < obs_time):
+        T = T0 + i*P
+        i = i+1
+    if(T > obs_end):
+        T = 'Nan'
+    n = i-1
+    return T,n;
+
+def transit_error_plus(row): 
+    del_T_pl = row[tranmiderr1] + row['# of transits since epoch']*row[per_err1]
+    return del_T_pl
+
+def transit_error_min(row):
+    del_T_min = abs(row[tranmiderr2]) + abs(row['# of transits since epoch']*row[per_err2])
+    return del_T_min
+
+# Creates a csv file of all exoplanet data including the calculated transit midpoint and their uncertainties
+exoplanets['Transit Midpoint (JD)'],exoplanets['# of transits since epoch']  = zip(*exoplanets.apply(transit_time,axis=1,args=(obs_time,obs_end)))
+exoplanets['Error +'] = exoplanets.apply(transit_error_plus,axis=1)
+exoplanets['Error -'] = exoplanets.apply(transit_error_min,axis=1)
+exoplanets = exoplanets.dropna()
+exoplanets.to_csv('Transit_Calculations.csv',index=False)
+
+
+# Returns planets with a transit midpoint uncertainty greater than 3 hours and exports all planet data in a csv file
+
+three_hours = 3/24
+planets = []
+pl_err1 = []
+pl_err2 = []
+for row in range(0,len(exoplanets)):
+    error_up = exoplanets.iloc[row]['Error +']
+    error_down = exoplanets.iloc[row]['Error -']
+    if(error_up > three_hours or error_down > three_hours):
+        planets.append(exoplanets.iloc[row][Pl_name])
+        pl_err1.append(exoplanets.iloc[row]['Error +'])
+        pl_err2.append(exoplanets.iloc[row]['Error -'])
+Large_Unc_Pl = pd.DataFrame(data=planets,columns=['Planet Name'])
+Large_Unc_Pl['Uncertainty + (Days)'] = pl_err1
+Large_Unc_Pl['Uncertainty - (Days)'] = pl_err2
+Large_Unc_Pl.to_csv('Large_Unc_Pl.csv',index=False)
