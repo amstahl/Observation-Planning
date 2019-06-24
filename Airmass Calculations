@@ -105,7 +105,7 @@ def months(year):
     return months
     
     
-    def airmass_calc(coord,time):
+def airmass_calc(coord,time):
     # calculates airmass for one target for a list of times, returns times with airmass < 2
     t = time[1:]
     frame = AltAz(obstime=t,location=location)
