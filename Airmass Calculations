@@ -1,0 +1,130 @@
+import pandas as pd
+import astropy
+import julian
+import datetime as dt
+from astropy.coordinates import AltAz
+from astropy.coordinates import SkyCoord
+from astropy.coordinates import EarthLocation
+from astropy.coordinates import get_sun
+import astropy.units as u
+from astropy.time import Time
+
+
+#desired column names
+# current names of the columns on the Exoplanet Archive
+# update here if needed
+pl_name = 'pl_name'               # name of planet
+tranflag = 'pl_tranflag'          # transit flag ( = 1 for transiting planet)
+ra = 'ra'                         # right ascencion
+dec = 'dec'                       # declination
+url = 'https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=exoplanets&select=' + pl_name + ','+ tranflag + ','\
+    + ra + ',' + dec + '&where=' + tranflag + '=1'
+exoplanets = pd.read_csv(url).dropna().drop('pl_tranflag', 1)
+
+location = EarthLocation.of_site('Lick Observatory')  # observing location
+
+# creates array of coordinates
+ra = exoplanets['ra']*u.degree         
+dec = exoplanets['dec']*u.degree
+coords = SkyCoord(ra=ra, dec=dec)
+planets = exoplanets['pl_name']
+
+def to_JD(time):
+    time = Time(time,format = 'iso')
+    jd = float(time.jd)
+    return jd
+def to_calendar(time):
+    time = Time(time,format = 'jd')
+    date = str(time.iso)
+    return date
+    
+    
+  
+def months(year):
+    Jan = ['Jan',str(year) + '-01-15 17:00:00',str(year) + '-01-15 18:00:00',str(year) + '-01-15 19:00:00',\
+          str(year) + '-01-15 20:00:00', str(year) + '-01-15 21:00:00', str(year) + '-01-15 22:00:00', \
+          str(year) + '-01-15 23:00:00', str(year) + '-01-16 00:00:00', str(year) + '-01-16 01:00:00',\
+          str(year) + '-01-16 02:00:00', str(year) + '-01-16 03:00:00', str(year) + '-01-16 04:00:00',\
+          str(year) + '-01-16 05:00:00']
+    Feb = ['Feb', str(year) + '-02-15 17:00:00',str(year) + '-02-15 18:00:00',str(year) + '-02-15 19:00:00',\
+          str(year) + '-02-15 20:00:00', str(year) + '-02-15 21:00:00', str(year) + '-02-15 22:00:00', \
+          str(year) + '-02-15 23:00:00', str(year) + '-02-16 00:00:00', str(year) + '-02-16 01:00:00',\
+          str(year) + '-02-16 02:00:00', str(year) + '-02-16 03:00:00', str(year) + '-02-16 04:00:00',\
+          str(year) + '-02-16 05:00:00']
+    Mar = ['Mar', str(year) + '-03-15 17:00:00',str(year) + '-03-15 18:00:00',str(year) + '-03-15 19:00:00',\
+          str(year) + '-03-15 20:00:00', str(year) + '-03-15 21:00:00', str(year) + '-03-15 22:00:00', \
+          str(year) + '-03-15 23:00:00', str(year) + '-03-16 00:00:00', str(year) + '-03-16 01:00:00',\
+          str(year) + '-03-16 02:00:00', str(year) + '-03-16 03:00:00', str(year) + '-03-16 04:00:00',\
+          str(year) + '-03-16 05:00:00']
+    Apr = ['Apr', str(year) + '-04-15 17:00:00',str(year) + '-04-15 18:00:00',str(year) + '-04-15 19:00:00',\
+          str(year) + '-04-15 20:00:00', str(year) + '-04-15 21:00:00', str(year) + '-04-15 22:00:00', \
+          str(year) + '-04-15 23:00:00', str(year) + '-04-16 00:00:00', str(year) + '-04-16 01:00:00',\
+          str(year) + '-04-16 02:00:00', str(year) + '-04-16 03:00:00', str(year) + '-04-16 04:00:00',\
+          str(year) + '-04-16 05:00:00']
+    May = ['May', str(year) + '-05-15 17:00:00',str(year) + '-05-15 18:00:00',str(year) + '-05-15 19:00:00',\
+          str(year) + '-05-15 20:00:00', str(year) + '-05-15 21:00:00', str(year) + '-05-15 22:00:00', \
+          str(year) + '-05-15 23:00:00', str(year) + '-05-16 00:00:00', str(year) + '-05-16 01:00:00',\
+          str(year) + '-05-16 02:00:00', str(year) + '-05-16 03:00:00', str(year) + '-05-16 04:00:00',\
+          str(year) + '-05-16 05:00:00']
+    Jun = ['Jun', str(year) + '-06-15 17:00:00',str(year) + '-06-15 18:00:00',str(year) + '-06-15 19:00:00',\
+          str(year) + '-06-15 20:00:00', str(year) + '-06-15 21:00:00', str(year) + '-06-15 22:00:00', \
+          str(year) + '-06-15 23:00:00', str(year) + '-06-16 00:00:00', str(year) + '-06-16 01:00:00',\
+          str(year) + '-06-16 02:00:00', str(year) + '-06-16 03:00:00', str(year) + '-06-16 04:00:00',\
+          str(year) + '-06-16 05:00:00']
+    Jul = ['Jul', str(year) + '-07-15 17:00:00',str(year) + '-07-15 18:00:00',str(year) + '-07-15 19:00:00',\
+          str(year) + '-07-15 20:00:00', str(year) + '-07-15 21:00:00', str(year) + '-07-15 22:00:00', \
+          str(year) + '-07-15 23:00:00', str(year) + '-07-16 00:00:00', str(year) + '-07-16 01:00:00',\
+          str(year) + '-07-16 02:00:00', str(year) + '-07-16 03:00:00', str(year) + '-07-16 04:00:00',\
+          str(year) + '-07-16 05:00:00']
+    Aug = ['Aug', str(year) + '-08-15 17:00:00', str(year) + '-08-15 18:00:00', str(year) + '-08-15 19:00:00',\
+          str(year) + '-08-15 20:00:00', str(year) + '-08-15 21:00:00', str(year) + '-08-15 22:00:00', \
+          str(year) + '-08-15 23:00:00', str(year) + '-08-16 00:00:00', str(year) + '-08-16 01:00:00',\
+          str(year) + '-08-16 02:00:00', str(year) + '-08-16 03:00:00', str(year) + '-08-16 04:00:00',\
+          str(year) + '-08-16 05:00:00']
+    Sep = ['Sep', str(year) + '-09-15 17:00:00',str(year) + '-09-15 18:00:00',str(year) + '-09-15 19:00:00',\
+          str(year) + '-09-15 20:00:00', str(year) + '-09-15 21:00:00', str(year) + '-09-15 22:00:00', \
+          str(year) + '-09-15 23:00:00', str(year) + '-09-16 00:00:00', str(year) + '-09-16 01:00:00',\
+          str(year) + '-09-16 02:00:00', str(year) + '-09-16 03:00:00', str(year) + '-09-16 04:00:00',\
+          str(year) + '-09-16 05:00:00']
+    Oct = ['Oct', str(year) + '-10-15 17:00:00',str(year) + '-10-15 18:00:00',str(year) + '-10-15 19:00:00',\
+          str(year) + '-10-15 20:00:00', str(year) + '-10-15 21:00:00', str(year) + '-10-15 22:00:00', \
+          str(year) + '-10-15 23:00:00', str(year) + '-10-16 00:00:00', str(year) + '-10-16 01:00:00',\
+          str(year) + '-10-16 02:00:00', str(year) + '-10-16 03:00:00', str(year) + '-10-16 04:00:00',\
+          str(year) + '-10-16 05:00:00']
+    Nov = ['Nov', str(year) + '-11-15 17:00:00', str(year) + '-11-15 18:00:00',str(year) + '-11-15 19:00:00',\
+          str(year) + '-11-15 20:00:00', str(year) + '-11-15 21:00:00', str(year) + '-11-15 22:00:00', \
+          str(year) + '-11-15 23:00:00', str(year) + '-11-16 00:00:00', str(year) + '-11-16 01:00:00',\
+          str(year) + '-11-16 02:00:00', str(year) + '-11-16 03:00:00', str(year) + '-11-16 04:00:00',\
+          str(year) + '-11-16 05:00:00']
+    Dec = ['Dec', str(year) + '-12-15 17:00:00',str(year) + '-12-15 18:00:00',str(year) + '-12-15 19:00:00',\
+          str(year) + '-12-15 20:00:00', str(year) + '-12-15 21:00:00', str(year) + '-12-15 22:00:00', \
+          str(year) + '-12-15 23:00:00', str(year) + '-12-16 00:00:00', str(year) + '-12-16 01:00:00',\
+          str(year) + '-12-16 02:00:00', str(year) + '-12-16 03:00:00', str(year) + '-12-16 04:00:00',\
+               str(year) + '-12-16 05:00:00']
+    months = [Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec]
+    return months
+    
+    
+    def airmass_calc(coord,time):
+    # calculates airmass for one target for a list of times, returns times with airmass < 2
+    t = time[1:]
+    frame = AltAz(obstime=t,location=location)
+    transform = coord.transform_to(frame)
+    airmass = list(transform.secz)
+    airmass = [float(airmass[i]) for i in range(len(airmass))]
+    visible_times = [t[i] for i in range(len(t)) if airmass[i] < 2 and airmass[i]>0]
+    return visible_times
+
+def num_visible(coords,year):  
+    # number of visible hours each month for a target
+    m = months(year)
+    month_name = [m[i][0] for i in range(len(m))]
+    all_months = [(month_name[i],len(airmass_calc(coords,m[i]))) for i in range(len(m))]
+    return all_months
+
+def visibility_by_pl(coords, year):
+    return [num_visible(coords[i],year) for i in range(len(coords))]
+    
+    
+exoplanets['Number of Visible Hours By Month'] = visibility_by_pl(coords, 2020)
+exoplanets.to_csv(airmass_calcs.csv)
