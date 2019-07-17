@@ -22,6 +22,7 @@ url = 'https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?t
 exoplanets = pd.read_csv(url).dropna().drop('pl_tranflag', 1)
 
 location = EarthLocation.of_site('Lick Observatory')  # observing location
+offset = 8*u.hr # offset of time at observing location from UTC
 
 # creates array of coordinates
 ra = exoplanets['ra']*u.degree         
@@ -105,14 +106,25 @@ def months(year):
     return months
     
     
+def sun(time):
+    time = Time(time,format='iso',location=location)
+    T = time + offset
+    x = get_sun(T).transform_to(AltAz(obstime=T,location=location))
+    deg = float(x.alt/u.degree)
+    if(deg > -12):
+        sun = True
+    else:
+        sun = False
+    return sun
 def airmass_calc(coord,time):
-    # calculates airmass for one target for a list of times, returns times with airmass < 2
+    # calculates airmass for one target for a list of times, returns times with airmass < 2 and while sky is dark
+    # 
     t = time[1:]
     frame = AltAz(obstime=t,location=location)
     transform = coord.transform_to(frame)
     airmass = list(transform.secz)
     airmass = [float(airmass[i]) for i in range(len(airmass))]
-    visible_times = [t[i] for i in range(len(t)) if airmass[i] < 2 and airmass[i]>0]
+    visible_times = [t[i] for i in range(len(t)) if airmass[i] < 2 and airmass[i]>0 and sun(t[i])==False]
     return visible_times
 
 def num_visible(coords,year):  
